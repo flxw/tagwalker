@@ -1,6 +1,6 @@
 CC         = g++
-EXE		   = twalk
-OBJ		   = main.o behavioursettings.o
+EXE	   = twalk
+OBJ	   = main.o configuration.o tagwalker.o
 LFLAGS 	   = -Wall -ltag
 CFLAGS     = -Wall -c
 
@@ -11,6 +11,7 @@ all: $(OBJ)
 	$(CC) $(CFLAGS) $(DEBUG) $<
 
 debug: CFLAGS += -DDEBUG -g
+debug: LFLAGS += -DDEBUG -g
 debug: all
 
 release: CFLAGS += -O
