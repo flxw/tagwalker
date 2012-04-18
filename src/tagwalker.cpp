@@ -2,7 +2,6 @@
 
 //DEBUG
 #include <iostream>
-#include <iomanip>
 
 TagWalker::TagWalker(const Configuration &conf) : config(conf)
 {
@@ -25,7 +24,7 @@ int TagWalker::handleDirEntry(const char *fpath, const struct stat *sb, int tfla
 }
 
 void TagWalker::handleMusicFile(const TagLib::FileRef &fr, std::string path) {
-    // check wether the file is already in the right place
+    // check whether the file is already in the right place
     // to do that, expand the pattern first and make it a complete filename
     std::string expandedPattern;
 
@@ -36,12 +35,8 @@ void TagWalker::handleMusicFile(const TagLib::FileRef &fr, std::string path) {
 
         // only act if the two directories are different from one another
         if ( path != expandedPattern ) {
-            if (this->config.hasTestMode()) {
-                ++this->movedFileCount;
-            } else {
-                this->RecursivelyMkdir(expandedPattern);
-                this->forkAndMove(path, expandedPattern);
-            }
+            this->RecursivelyMkdir(expandedPattern);
+            this->forkAndMove(path, expandedPattern);
         }
     } else {
         ++this->unableToHandleCount;
@@ -87,22 +82,48 @@ void TagWalker::RecursivelyMkdir(const std::string &path) {
     unsigned int i = p.find('/', this->config.getWalkRoot().length()+1);
 
     // Test for directory existence first
+    // TODO put that in testModeDirList as well?!
     if ( access(p.c_str(), R_OK|W_OK|X_OK|F_OK) == 0) {
         return;
     }
 
     while (i != 0) {
         i = p.find('/', i);
-        std::string buf = p.substr(0,i++);
+        const std::string buf = p.substr(0, i++);
 
         if (access(buf.c_str(), R_OK | W_OK | X_OK | F_OK) != 0) {
-            mkdir(buf.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
-            ++this->newDirCount;
+
+            if (this->config.hasTestMode()) {
+                bool alreadyCreated = false;
+
+                for(std::list<std::string>::const_iterator it = this->testModeDirList.begin();
+                    it != this->testModeDirList.end(); ++it) {
+                    if (*it == buf) {
+                        alreadyCreated = true;
+                        break;
+                    }
+                }
+
+                if (!alreadyCreated) {
+                    std::cout << "Create directory '" << buf << "'" << std::endl;
+                    ++this->newDirCount;
+                    this->testModeDirList.push_back(buf);
+                }
+            } else {
+                mkdir(buf.c_str(), S_IRWXU | S_IRWXG | S_IRWXO); // let the users umask handle the rest
+                ++this->newDirCount;
+            }
         }
     }
 }
 
 void TagWalker::forkAndMove(const std::string &from, const std::string &to) {
+    if (this->config.hasTestMode()) {
+        std::cout << from << " -> " << to << std::endl;
+        ++this->movedFileCount;
+        return;
+    }
+
     // stack overflow to the rescue
     // http://stackoverflow.com/questions/2180079/how-can-i-copy-a-file-on-unix-using-c
     int childExitStatus;

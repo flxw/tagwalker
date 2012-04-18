@@ -5,8 +5,9 @@
 #define _XOPEN_SOURCE 500
 #endif //_XOPEN_SOURCE
 #include <ftw.h>
-
 #include <sys/wait.h>
+
+#include <list>
 
 #include <taglib/fileref.h>
 #include <taglib/tag.h>
@@ -47,6 +48,8 @@ private:
     unsigned int movedFileCount;
     unsigned int newDirCount;
     unsigned int unableToHandleCount;
+
+    std::list<std::string> testModeDirList;
 };
 
 #endif // TAGWALKER_H

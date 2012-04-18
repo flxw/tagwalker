@@ -38,7 +38,6 @@ static void printHelp(void)
     cout << "Sort or rename your music files by a specific pattern that you have set" << endl;
     cout << endl;
     cout << "Options (standalone):" << endl;
-    cout << "  -v\t Be talkative and print info useful for debugging" << endl;
     cout << "  -s\t Print a summary at the end" << endl;
     cout << "  -h\t Displays this message" << endl;
     cout << "  -t\t Test mode: Only show what would be done" << endl;
