@@ -41,6 +41,8 @@ static void printHelp(void)
     cout << "  -s\t Print a summary at the end" << endl;
     cout << "  -h\t Displays this message" << endl;
     cout << "  -t\t Test mode: Only show what would be done" << endl;
+    cout << "  -c\t Cleanup: if any empty folders are found, they are deleted" << endl;
+    cout << "    \t for info on using this with the testflag see the manpage" << endl;
     cout << endl;
     cout << "Options (requiring arguments):" << endl;
     cout << "  -p <pattern>\t specify a pattern that shall be used to order/rename" << endl;
@@ -104,14 +106,12 @@ int main(int argc, char** argv)
                 if (argv[i][j] == 'h') {
                     printHelp();
                     return 0;
-                } else if (argv[i][j] == 'v') {
-                    arguments.setVerbose(true);
-                    arguments.setTestMode(false);
+                } else if (argv[i][j] == 'c') {
+                    arguments.setCleanup(true);
                 } else if (argv[i][j] == 's') {
                     arguments.setSummaryFlag(true);
                 } else if (argv[i][j] == 't') {
                     arguments.setTestMode(true);
-                    arguments.setVerbose(false);
                 }
             }
         } else {
@@ -132,7 +132,6 @@ int main(int argc, char** argv)
         cerr << ": The pattern passed was not valid!" << endl;
         return 4;
     }
-    return 0;
 
     tw_ptr = new TagWalker(arguments);
     /* Start walking the directory with the following options:
@@ -151,7 +150,7 @@ int main(int argc, char** argv)
     timeval start, stop, result;
 
     gettimeofday(&start, NULL);
-    nftw(pwd, tagwalker_direntryhandle_wrapper, 20, FTW_PHYS);
+    nftw(pwd, tagwalker_direntryhandle_wrapper, 20, FTW_DEPTH | FTW_PHYS);
     gettimeofday(&stop, NULL);
 
     timersub(&stop, &start, &result);
@@ -160,6 +159,12 @@ int main(int argc, char** argv)
     if (arguments.hasSummaryFlag()) {
         cout << "Moved   " << tw_ptr->getMovedFileCount() << " files successfully" << endl;
         cout << "Created " << tw_ptr->getNewDirCount() << " new directories" << endl;
+
+        if (arguments.shouldCleanup()) {
+            cout << "Deleted " << tw_ptr->getDelDirCount() << " directories" << endl;
+        }
+
+        cout << "Left    " << tw_ptr->getNoHandleCount() << " files unhandled" << endl;
         cout << "Took    " << result.tv_sec + result.tv_usec/1000000.0 << "s" << endl;
     }
 

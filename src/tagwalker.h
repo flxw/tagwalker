@@ -6,6 +6,7 @@
 #endif //_XOPEN_SOURCE
 #include <ftw.h>
 #include <sys/wait.h>
+#include <dirent.h>
 
 #include <list>
 
@@ -33,6 +34,9 @@ private:
     void RecursivelyMkdir(const std::string& path);
     void forkAndMove(const std::string& from, const std::string& to);
 
+    // functions for handling folders
+    bool isDirectoryEmpty(const char* path);
+
     // functions for handling pathnames
     std::string getBasename(const std::string &path);
     std::string getPathname(const std::string &path);
@@ -41,6 +45,8 @@ public:
     // getters for summary
     int getMovedFileCount() const;
     int getNewDirCount() const;
+    int getNoHandleCount() const;
+    int getDelDirCount() const;
 
 private:
     const Configuration &config;
@@ -48,6 +54,7 @@ private:
     unsigned int movedFileCount;
     unsigned int newDirCount;
     unsigned int unableToHandleCount;
+    unsigned int removedDirCount;
 
     std::list<std::string> testModeDirList;
 };

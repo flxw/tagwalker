@@ -2,9 +2,9 @@
 
 Configuration::Configuration()
 {
-    this->isVerbose       = false;
     this->shouldSummarize = false;
     this->shouldTest      = false;
+    this->shouldClean     = false;
 }
 
 bool Configuration::isWalkRootValid() {
@@ -67,14 +67,6 @@ Configuration::OPMODE Configuration::getOpMode() const {
     return this->mode;
 }
 
-void Configuration::setVerbose(bool verb) {
-    this->isVerbose = verb;
-}
-
-bool Configuration::hasVerbose() const {
-    return this->isVerbose;
-}
-
 void Configuration::setSummaryFlag(bool on) {
     this->shouldSummarize = on;
 }
@@ -89,4 +81,12 @@ void Configuration::setTestMode(bool on) {
 
 bool Configuration::hasTestMode() const {
     return this->shouldTest;
+}
+
+void Configuration::setCleanup(bool on) {
+    this->shouldClean = on;
+}
+
+bool Configuration::shouldCleanup() const {
+    return this->shouldClean;
 }

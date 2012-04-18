@@ -1,6 +1,6 @@
 #include "tagwalker.h"
 
-//DEBUG
+//TODO replace by putting output into some kind of container
 #include <iostream>
 
 TagWalker::TagWalker(const Configuration &conf) : config(conf)
@@ -8,6 +8,7 @@ TagWalker::TagWalker(const Configuration &conf) : config(conf)
     this->movedFileCount      = 0;
     this->newDirCount         = 0;
     this->unableToHandleCount = 0;
+    this->removedDirCount     = 0;
 }
 
 int TagWalker::handleDirEntry(const char *fpath, const struct stat *sb, int tflag, FTW *ftwbuf) {
@@ -18,6 +19,15 @@ int TagWalker::handleDirEntry(const char *fpath, const struct stat *sb, int tfla
         // see wether the file is good for working with
         if (!file.isNull() && !file.tag()->isEmpty()) {
             this->handleMusicFile(file, std::string(fpath));
+        }
+    } else if (tflag == FTW_DP) {
+        if (this->config.shouldCleanup() && this->isDirectoryEmpty(fpath)) {
+            if (this->config.hasTestMode()) {
+                std::cout << "Delete '" << fpath << "´" << std::endl;
+            } else {
+                rmdir(fpath);
+            }
+            ++removedDirCount;
         }
     }
     return 0;
@@ -156,6 +166,35 @@ void TagWalker::forkAndMove(const std::string &from, const std::string &to) {
     }
 }
 
+bool TagWalker::isDirectoryEmpty(const char *dirname) {
+    // sometimes the program is too fast for IO to keep up.
+    // To avoid seeing a directory that should be empty as nonempty,
+    // we sync the buffers before checking for emptiness
+    sync();
+
+    int n = 0;
+    struct dirent *d;
+    DIR *dir = opendir(dirname);
+
+    if (dir == NULL) {//Not a directory or doesn't exist
+        return 1;
+    }
+
+    while ((d = readdir(dir)) != NULL)
+    {
+        if(++n > 2) {
+            break;
+        }
+    }
+    closedir(dir);
+
+    if (n <= 2) {//Directory Empty
+        return true;
+    } else {
+        return false;
+    }
+}
+
 std::string TagWalker::getBasename(const std::string &path) {
     int pos = path.find_last_of('/');
 
@@ -176,4 +215,12 @@ int TagWalker::getMovedFileCount() const {
 
 int TagWalker::getNewDirCount() const {
     return this->newDirCount;
+}
+
+int TagWalker::getDelDirCount() const {
+    return this->removedDirCount;
+}
+
+int TagWalker::getNoHandleCount() const {
+    return this->unableToHandleCount;
 }

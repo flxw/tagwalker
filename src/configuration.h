@@ -36,10 +36,6 @@ public:
     void setOpMode(OPMODE m);
     OPMODE getOpMode() const;
 
-    // isVerbose get an set methods
-    void setVerbose(bool verb);
-    bool hasVerbose() const;
-
     // shouldSummarize get an set methods
     void setSummaryFlag(bool on);
     bool hasSummaryFlag() const;
@@ -48,15 +44,19 @@ public:
     void setTestMode(bool on);
     bool hasTestMode() const;
 
+    // shouldCleanup get and set methods
+    void setCleanup(bool on);
+    bool shouldCleanup() const;
+
 private:
     std::string walkRoot;
     std::string pattern;
 
     OPMODE mode;
 
-    bool isVerbose;
     bool shouldSummarize;
     bool shouldTest;
+    bool shouldClean;
 };
 
 #endif // CONFIGURATION_H
