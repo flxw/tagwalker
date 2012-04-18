@@ -19,6 +19,30 @@ bool Configuration::isWalkRootValid() {
     return blnRet;
 }
 
+bool Configuration::isPatternValid() {
+    bool blnRet = !this->pattern.empty();
+
+    for (int i=0; blnRet && i<this->pattern.length(); ++i) {
+        // check for the pattern initiator
+        if (this->pattern.at(i) == '%') {
+            // the letter following the initiator is the placeholder
+            // test for a pattern that wants to crash the program first
+            if (++i >= this->pattern.length()) {
+                blnRet = false;
+            } else {
+                switch (this->pattern.at(i)) {
+                case 'a':
+                case 'r':
+                case 't': blnRet = true; break;
+                default: blnRet = false; break;
+                }
+            }
+        }
+    }
+
+    return blnRet;
+}
+
 void Configuration::setWalkRoot(const char *path) {
     this->walkRoot = std::string(path);
 }

@@ -41,7 +41,6 @@ static void printHelp(void)
     cout << "  -s\t Print a summary at the end" << endl;
     cout << "  -h\t Displays this message" << endl;
     cout << "  -t\t Test mode: Only show what would be done" << endl;
-    cout << "The use of -v and -t is not possible - refer to 'man twalk´ for more info" << endl;
     cout << endl;
     cout << "Options (requiring arguments):" << endl;
     cout << "  -p <pattern>\t specify a pattern that shall be used to order/rename" << endl;
@@ -126,6 +125,14 @@ int main(int argc, char** argv)
         cerr << ": The directory passed was not valid!" << endl;
         return 3;
     }
+
+    // check for false patterns
+    if (!arguments.isPatternValid()) {
+        cerr << PROG_NAME;
+        cerr << ": The pattern passed was not valid!" << endl;
+        return 4;
+    }
+    return 0;
 
     tw_ptr = new TagWalker(arguments);
     /* Start walking the directory with the following options:

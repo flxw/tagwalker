@@ -19,6 +19,10 @@ public:
     // to create directories and move stuff around
     bool isWalkRootValid();
 
+    // isPatternValid determines whether the given pattern
+    // is valid and that it can be expanded given enough data
+    bool isPatternValid();
+
     /* GETTERS AND SETTERS FROM HERE ON */
     // walkRoot get and set methods
     void setWalkRoot(const char* path);
