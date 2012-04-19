@@ -1,8 +1,5 @@
 #include "tagwalker.h"
 
-//TODO replace by putting output into some kind of container
-#include <iostream>
-
 TagWalker::TagWalker(const Configuration &conf) : config(conf)
 {
     this->movedFileCount      = 0;
@@ -23,7 +20,7 @@ int TagWalker::handleDirEntry(const char *fpath, const struct stat *sb, int tfla
     } else if (tflag == FTW_DP) {
         if (this->config.shouldCleanup() && this->isDirectoryEmpty(fpath)) {
             if (this->config.hasTestMode()) {
-                std::cout << "Delete '" << fpath << "´" << std::endl;
+                this->testModeOutputQueue.push(std::string("Delete `") + std::string(fpath) + std::string("'"));
             } else {
                 rmdir(fpath);
             }
@@ -115,9 +112,9 @@ void TagWalker::RecursivelyMkdir(const std::string &path) {
                 }
 
                 if (!alreadyCreated) {
-                    std::cout << "Create directory '" << buf << "'" << std::endl;
-                    ++this->newDirCount;
+                    this->testModeOutputQueue.push(std::string("Create directory `") + buf + std::string("'"));
                     this->testModeDirList.push_back(buf);
+                    ++this->newDirCount;
                 }
             } else {
                 mkdir(buf.c_str(), S_IRWXU | S_IRWXG | S_IRWXO); // let the users umask handle the rest
@@ -129,7 +126,7 @@ void TagWalker::RecursivelyMkdir(const std::string &path) {
 
 void TagWalker::forkAndMove(const std::string &from, const std::string &to) {
     if (this->config.hasTestMode()) {
-        std::cout << from << " -> " << to << std::endl;
+        this->testModeOutputQueue.push(from + std::string(" -> ") + to);
         ++this->movedFileCount;
         return;
     }
@@ -141,23 +138,25 @@ void TagWalker::forkAndMove(const std::string &from, const std::string &to) {
 
     if (pid == 0) { /* child */
         execl("/bin/mv", "/bin/mv", from.c_str(), to.c_str(), (char *)NULL);
-    }
-    else if (pid < 0) {
+    } else if (pid < 0) {
         /* error - couldn't start process - you decide how to handle */
         ++this->unableToHandleCount;
-    }
-    else {
+    } else {
         /* parent - wait for child - this has all error handling, you
              * could just call wait() as long as you are only expecting to
              * have one child process at a time.
              */
-        pid_t ws = waitpid( pid, &childExitStatus, WNOHANG);
+//        pid_t ws = waitpid(pid, &childExitStatus, WNOHANG);
+        pid_t ws = wait(&childExitStatus);
+
         if (ws == -1) {
             ++this->unableToHandleCount;
         }
 
-        if( WIFEXITED(childExitStatus)) /* exit code in childExitStatus */ {
-            if (WEXITSTATUS(childExitStatus) == 0) {/* zero is normal exit */
+        if (WIFEXITED(childExitStatus))
+            /* exit code in childExitStatus */ {
+            if (WEXITSTATUS(childExitStatus) == 0) {
+                /* zero is normal exit */
                 ++this->movedFileCount;
             } else {
                 ++this->unableToHandleCount;
@@ -170,7 +169,9 @@ bool TagWalker::isDirectoryEmpty(const char *dirname) {
     // sometimes the program is too fast for IO to keep up.
     // To avoid seeing a directory that should be empty as nonempty,
     // we sync the buffers before checking for emptiness
-    sync();
+    if (this->config.hasTestMode()) {
+        sync();
+    }
 
     int n = 0;
     struct dirent *d;
@@ -223,4 +224,8 @@ int TagWalker::getDelDirCount() const {
 
 int TagWalker::getNoHandleCount() const {
     return this->unableToHandleCount;
+}
+
+std::queue<std::string> TagWalker::getTestModeOutputQueue() {
+    return this->testModeOutputQueue;
 }

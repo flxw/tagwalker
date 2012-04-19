@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include <iostream>
+#include <queue>
 
 #include "configuration.h"
 #include "tagwalker.h"
@@ -154,6 +155,16 @@ int main(int argc, char** argv)
     gettimeofday(&stop, NULL);
 
     timersub(&stop, &start, &result);
+
+    // handle testmode here
+    if (arguments.hasTestMode()) {
+        queue<string> output = tw_ptr->getTestModeOutputQueue();
+
+        while (!output.empty()) {
+            cout << output.front() << endl;
+            output.pop();
+        }
+    }
 
     // print summary here
     if (arguments.hasSummaryFlag()) {

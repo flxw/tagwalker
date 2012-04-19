@@ -9,6 +9,7 @@
 #include <dirent.h>
 
 #include <list>
+#include <queue>
 
 #include <taglib/fileref.h>
 #include <taglib/tag.h>
@@ -48,6 +49,9 @@ public:
     int getNoHandleCount() const;
     int getDelDirCount() const;
 
+    // getters for testmode output
+    std::queue<std::string> getTestModeOutputQueue();
+
 private:
     const Configuration &config;
 
@@ -57,6 +61,7 @@ private:
     unsigned int removedDirCount;
 
     std::list<std::string> testModeDirList;
+    std::queue<std::string> testModeOutputQueue;
 };
 
 #endif // TAGWALKER_H
