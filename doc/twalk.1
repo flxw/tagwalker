@@ -1,0 +1,110 @@
+.\" manpage for the userspace (section 1) program 'twalk'
+.\" vim: set tw=70
+.TH TWALK 1 "2012-04-19" "twalk 0.0.1a" "User manual"
+.SH NAME
+twalk \- organise your music library by a specific pattern
+
+.SH SYNOPSIS
+twalk <mode> -p <pattern> [OPTIONS] <directory>
+
+.SH DESCRIPTION
+Twalk is a utility that enables you to set up a structure
+inside your music 
+.I directory 
+the way you always wanted it to be.
+.PP
+It uses the
+.B taglib
+library and thus is capable of reading almost any type of tag that is
+commonly used.
+.PP
+Additionally, twalk supports different operating
+.I modes.
+If you have set up your directory structure using mode
+.I reorder
+, you can then
+.I rename
+the music files the way you want them.
+.PP
+If you want to use rename mode - it is not yet implemented, sorry for
+raising false hopes.
+
+.SH OPTIONS
+.IP mode
+Either
+.I reorder
+or
+.I rename
+.IP "-p <pattern>"
+Specify the pattern that is used to execute 
+.I mode
+.IP -s
+Print a summary at the end of operation.
+.IP -h
+Display a help message
+.IP -t
+Show what would be done. VERY much output, consider redirecting to file
+.IP -c
+Clean up folders that are emptied during operation.
+Slows execution down considerably due to calls to
+.B sync(2).
+As you probably not run twalk every day, it is worth the time.
+
+.SH OPERATION MODES
+.SS reorder
+In reorder mode, twalk changes to the given
+.I directory
+and begins to walk the file tree. Every file's tags are read and
+expanded in the 
+.I pattern
+given as argument.
+For example, you have a pattern that says you want to have all songs
+from one artist under one single directory, twalk will check whether
+the song already lives inside
+.I directory/artist
+and if not, moves it there.
+
+.SH PATTERN USAGE
+twalk supports 3 different placeholders for the pattern:
+.IP %a
+the song's artist
+.IP %r
+the album or release the song appears on
+.IP %t
+the trackname
+.PP
+In
+.B reorder mode
+, twalk will read the tags of every file and decide if they are
+sufficient for expanding the set pattern. If so, the pattern will be
+expanded and if the file's location does not match the expanded
+location, the file will be moved there. So, if you wanted to move every file in
+.I dir/
+into a directory structure
+.B inside
+.I dir/
+like
+.I $ARTIST/$RELEASE
+, you'd execute twalk the following way (note the slash between %a and %r):
+.RS
+twalk reorder -p %a/%r
+.I dir
+.RE
+
+.SH RETURN VALUES
+.IP 0
+Everything went well
+.IP 1
+Not enough parameters were passed. At the very least, twalk requires
+.I mode, -p <pattern>
+and a
+.I directory
+.IP 2
+Wrong, or yet unsupported mode was passed.
+.IP 3
+The directory that was passed was not valid.
+.IP 4
+The pattern that was passed was not valid.
+
+.SH BUGS
+None found yet. If you do find one, please report it at github.com/n0stradamus/twalk
