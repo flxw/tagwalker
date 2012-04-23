@@ -16,7 +16,7 @@ using namespace std;
 
 // program name and version
 static const char* PROG_NAME = "tagwalker";
-static const char* PROG_VERS = "0.0.1a";
+static const char* PROG_VERS = "0.1";
 
 // FIXME Ugly hack to be able to use member function with nftw
 static TagWalker* tw_ptr = NULL;
