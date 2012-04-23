@@ -1,5 +1,5 @@
 CC         = g++
-EXE	   = twalk
+EXE	   = tagwalker
 OBJ	   = main.o configuration.o tagwalker.o
 LFLAGS 	   = -Wall -ltag
 CFLAGS     = -Wall -c

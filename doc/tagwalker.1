@@ -1,11 +1,11 @@
-.\" manpage for the userspace (section 1) program 'twalk'
+.\" manpage for the userspace (section 1) program 'tagwalker'
 .\" vim: set tw=70
-.TH TWALK 1 "2012-04-19" "twalk 0.0.1a" "User manual"
+.TH TAGWALKER 1 "2012-04-23" "tagwalker 0.0.1a" "User manual"
 .SH NAME
-twalk \- organise your music library by a specific pattern
+tagwalker \- organise your music library by a specific pattern
 
 .SH SYNOPSIS
-twalk <mode> -p <pattern> [OPTIONS] <directory>
+tagwalker <mode> -p <pattern> [OPTIONS] <directory>
 
 .SH DESCRIPTION
 Twalk is a utility that enables you to set up a structure
@@ -18,16 +18,13 @@ It uses the
 library and thus is capable of reading almost any type of tag that is
 commonly used.
 .PP
-Additionally, twalk supports different operating
+Additionally, tagwalker supports different operating
 .I modes.
 If you have set up your directory structure using mode
 .I reorder
 , you can then
 .I rename
 the music files the way you want them.
-.PP
-If you want to use rename mode - it is not yet implemented, sorry for
-raising false hopes.
 
 .SH OPTIONS
 .IP mode
@@ -48,24 +45,28 @@ Show what would be done. VERY much output, consider redirecting to file
 Clean up folders that are emptied during operation.
 Slows execution down considerably due to calls to
 .B sync(2).
-As you probably not run twalk every day, it is worth the time.
+As you probably not run tagwalker every day, it is worth the time.
 
 .SH OPERATION MODES
 .SS reorder
-In reorder mode, twalk changes to the given
+In reorder mode, tagwalker changes to the given
 .I directory
 and begins to walk the file tree. Every file's tags are read and
 expanded in the 
 .I pattern
 given as argument.
 For example, you have a pattern that says you want to have all songs
-from one artist under one single directory, twalk will check whether
+from one artist under one single directory, tagwalker will check whether
 the song already lives inside
 .I directory/artist
 and if not, moves it there.
 
+.SS rename
+In rename mode, tagwalker renames the files inside the music directories, that
+seem to be music files (i.e. that have tags) the way the pattern requests it.
+
 .SH PATTERN USAGE
-twalk supports 3 different placeholders for the pattern:
+tagwalker supports 3 different placeholders for the pattern:
 .IP %a
 the song's artist
 .IP %r
@@ -75,7 +76,7 @@ the trackname
 .PP
 In
 .B reorder mode
-, twalk will read the tags of every file and decide if they are
+, tagwalker will read the tags of every file and decide if they are
 sufficient for expanding the set pattern. If so, the pattern will be
 expanded and if the file's location does not match the expanded
 location, the file will be moved there. So, if you wanted to move every file in
@@ -85,17 +86,28 @@ into a directory structure
 .I dir/
 like
 .I $ARTIST/$RELEASE
-, you'd execute twalk the following way (note the slash between %a and %r):
+, you'd execute tagwalker the following way (note the slash between %a and %r):
+.PP
 .RS
-twalk reorder -p %a/%r
+tagwalker reorder -p %a/%r
 .I dir
+.RE
+.PP
+In
+.B rename mode
+, tagwalker will perform its pattern-expansion tests and rename
+the file accordingly. Note that the pattern must not contain a slash!
+If you want to rename your files like so: $ARTIST - $TITLE.$SUFFIX
+.PP
+.RS
+tagwalker rename -p "%a - %t"
 .RE
 
 .SH RETURN VALUES
 .IP 0
 Everything went well
 .IP 1
-Not enough parameters were passed. At the very least, twalk requires
+Not enough parameters were passed. At the very least, tagwalker requires
 .I mode, -p <pattern>
 and a
 .I directory
@@ -107,4 +119,4 @@ The directory that was passed was not valid.
 The pattern that was passed was not valid.
 
 .SH BUGS
-None found yet. If you do find one, please report it at github.com/n0stradamus/twalk
+None found yet. If you do find one, please report it at github.com/n0stradamus/tagwalker
