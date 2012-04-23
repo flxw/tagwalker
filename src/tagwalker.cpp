@@ -37,13 +37,30 @@ void TagWalker::handleMusicFile(const TagLib::FileRef &fr, std::string path) {
 
     if (this->expandPattern(fr.tag(), expandedPattern)) {
         // put the pieces together
-        // TODO decide between rename and reorder mode
-        expandedPattern = this->config.getWalkRoot() + expandedPattern + this->getBasename(path);
+        if (this->config.getOpMode() == Configuration::M_REORDER) {
+            expandedPattern = this->config.getWalkRoot() + expandedPattern;
+            expandedPattern.append(this->getBasename(path));
+        } else if (this->config.getOpMode() == Configuration::M_RENAME) {
+            expandedPattern = this->getPathname(path) + std::string("/") + expandedPattern;
+            expandedPattern.append(this->getSuffix(path));
+        }
 
-        // only act if the two directories are different from one another
+        // only act if the two directories differ
         if ( path != expandedPattern ) {
-            this->RecursivelyMkdir(expandedPattern);
-            this->forkAndMove(path, expandedPattern);
+
+            // now decide which opmode we have and what we should do
+            // in rename mode only the file itself is altered,
+            // so creating a directory is unnecessary
+            switch (this->config.getOpMode()) {
+            case Configuration::M_REORDER:
+                this->RecursivelyMkdir(expandedPattern);
+                this->forkAndMove(path, expandedPattern);
+                break;
+
+            case Configuration::M_RENAME:
+                this->forkAndMove(path, expandedPattern);
+                break;
+            }
         }
     } else {
         ++this->unableToHandleCount;
@@ -67,17 +84,24 @@ bool TagWalker::expandPattern(const TagLib::Tag *tr, std::string &expansion_str)
                 expansion_str.replace(i, 2, tr->album().to8Bit(true));
                 i += tr->artist().length()-1; //update the index
             }
+            // %t - track
+            else if (expansion_str.at(i+1) == 't' && !tr->title().isEmpty()) {
+                expansion_str.replace(i, 2, tr->title().to8Bit(true));
+                i += tr->title().length()-1;
+            }
         }
     }
 
 
-    // check for preceding and following slashes
-    if (*(expansion_str.begin()) != '/') {
-        expansion_str = "/" + expansion_str;
-    }
+    if (this->config.getOpMode() == Configuration::M_REORDER) {
+        // check for preceding and following slashes
+        if (*(expansion_str.begin()) != '/') {
+            expansion_str = "/" + expansion_str;
+        }
 
-    if (*(expansion_str.end()-1) != '/') {
-        expansion_str.append("/");
+        if (*(expansion_str.end()-1) != '/') {
+            expansion_str.append("/");
+        }
     }
 
     // finally return a boolean indicating wether expansion was successful
@@ -197,18 +221,28 @@ bool TagWalker::isDirectoryEmpty(const char *dirname) {
     }
 }
 
-std::string TagWalker::getBasename(const std::string &path) {
+std::string TagWalker::getPathname(const std::string &path) {
     int pos = path.find_last_of('/');
+    // what this function returns
+    // /tmp/filename.mp3
+    // ^^^^^
+    return path.substr(0, pos);
+}
 
-    // return everything from the last slash until the end
+std::string TagWalker::getBasename(const std::string &path) {
+    // what this function returns
+    // /tmp/filename.mp3
+    //      ^^^^^^^^
+    int pos = path.find_last_of('/');
     return path.substr(pos+1, std::string::npos);
 }
 
-std::string TagWalker::getPathname(const std::string &path) {
-    int pos = path.find_last_of('/');
-
-    // return everything from the beginning until the last slash
-    return path.substr(0, pos);
+std::string TagWalker::getSuffix(const std::string &path) {
+    // what this function returns
+    // /tmp/filename.mp3
+    //              ^^^^
+    int pos = path.find_last_of('.');
+    return path.substr(pos, std::string::npos);
 }
 
 int TagWalker::getMovedFileCount() const {

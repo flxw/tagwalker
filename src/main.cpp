@@ -72,6 +72,8 @@ int main(int argc, char** argv)
     // argv[1] is supposed to contain it
     if (strcmp(argv[1], "reorder") == 0) {
         arguments.setOpMode(Configuration::M_REORDER);
+    } else if (strcmp(argv[1], "rename") == 0) {
+        arguments.setOpMode(Configuration::M_RENAME);
     } else {
         // avoid false error messages if the user really wanted to see the help
         if (strcmp(argv[1], "-h") != 0) {

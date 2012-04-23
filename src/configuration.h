@@ -12,7 +12,7 @@ class Configuration {
 public:
     Configuration();
 
-    enum OPMODE { M_REORDER };
+    enum OPMODE { M_REORDER, M_RENAME };
 
     // isWalkRootValid determines wether the given root
     // is accessible and wether we have the right permissions

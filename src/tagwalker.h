@@ -43,8 +43,9 @@ private:
     bool isDirectoryEmpty(const char* path);
 
     // functions for handling pathnames
-    std::string getBasename(const std::string &path);
     std::string getPathname(const std::string &path);
+    std::string getBasename(const std::string &path);
+    std::string getSuffix(const std::string &path);
 
 public:
     // getters for summary

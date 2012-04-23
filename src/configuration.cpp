@@ -40,6 +40,11 @@ bool Configuration::isPatternValid() {
         }
     }
 
+    // a filename must not contain any slashes
+    if (this->mode == M_RENAME && this->pattern.find('/') != std::string::npos) {
+        blnRet = false;
+    }
+
     return blnRet;
 }
 
