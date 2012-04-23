@@ -169,7 +169,8 @@ bool TagWalker::isDirectoryEmpty(const char *dirname) {
     // sometimes the program is too fast for IO to keep up.
     // To avoid seeing a directory that should be empty as nonempty,
     // we sync the buffers before checking for emptiness
-    if (this->config.hasTestMode()) {
+    // because nothing is moved, it is senseless to sync in testmode
+    if (!this->config.hasTestMode()) {
         sync();
     }
 
