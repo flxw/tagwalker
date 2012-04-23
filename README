@@ -1,0 +1,46 @@
+Imagine you have a directory containing the following music files:
+
+dir/
+	metallica-nothing_else_matters.mp3 
+		(ID3 Tags: Artist: Metallica | Title: Nothing Else Matters)
+	still_counting.mp3
+		(APE Tags: Artist: Volbeat | Title: Still Counting)
+
+This does not look very good and is very unhelpful when browsing the files in a
+normal file browser. Even worse are files like "track1.mp3" that only have
+correct tags!  This project adresses this problem. If you want to have a clean
+and sorted music directory, then it might be worthwhile to continue reading!
+
+tagwalker lets you:
+ - reorder files
+ - rename files
+all with the info contained in their tags! Now that's really helpful!
+
+In 'reorder' operation, you can choose a pattern that will set the directory
+structure.  Let's say we want one folder for every artist and subdirectories for
+each album.  Then we would have:
+
+dir/
+	Metallica/
+		Metallica/
+			metallica-nothing_else_matters.mp3
+	Volbeat/
+		Gangsters & Cadillac Blood/
+			still_counting.mp3
+
+In 'rename' operation, you can also choose a pattern, but this time it will set
+the filename. Let's say we want ARTIST - TITLE.SUFFIX
+After that operation, our directory would look like this:
+
+dir/
+	Metallica
+		Metallica/
+			Metallica - Nothing Else Matters.mp3
+	Volbeat/
+		Gangsters & Cadillac Blood/
+			Volbeat - Still Counting.mp3
+
+Now doesn't that look nice? Order has been restored with two simple commands!
+And if you don't want to trust your 100GB music collection into the programs
+hands, it even has a dry-run mode. It produces a hell of a lot of output, but if
+you want to use it, it's there. Enjoy!
