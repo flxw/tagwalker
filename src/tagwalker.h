@@ -16,6 +16,10 @@
 
 #include "configuration.h"
 
+/* This class incorporates functions for walking the file tree
+ * According to the information contained in a Configuration instance
+ * patterns are expanded and files are renamed */
+
 class TagWalker
 {
 public:

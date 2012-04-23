@@ -59,6 +59,7 @@ static void printHelp(void)
 
 int main(int argc, char** argv)
 {
+    // Not enough arguments were passed - quit
     if (argc == 1) {
         cerr << PROG_NAME;
         cerr << ": Please pass the parameters that tagwalker requires!" << endl;
@@ -83,7 +84,7 @@ int main(int argc, char** argv)
         }
     }
 
-    // process the rest
+    // process the remaining parameters; should only be opts
     for (int i=2; i<argc; ++i) {
         //process options that require arguments first
         if (strcmp(argv[i], "-p") == 0) {
@@ -127,7 +128,7 @@ int main(int argc, char** argv)
         return 3;
     }
 
-    // check for false patterns
+    // check for an invalid pattern
     if (!arguments.isPatternValid()) {
         cerr << PROG_NAME;
         cerr << ": The pattern passed was not valid!" << endl;
@@ -135,6 +136,18 @@ int main(int argc, char** argv)
     }
 
     tw_ptr = new TagWalker(arguments);
+
+
+    chdir(arguments.getWalkRoot().c_str());
+
+    // change directory so paths are absolute
+    char pwd[4096];
+    getcwd(pwd, 4096);
+    arguments.setWalkRoot(pwd);
+
+    // we want to be able to measure program runtime
+    timeval start, stop, result;
+
     /* Start walking the directory with the following options:
     Start the directory walk at: rootDir
     call function walkTheFile() for every item
@@ -143,20 +156,13 @@ int main(int argc, char** argv)
     use the following flags:
       FTW_PHYS  -> makes nftw() ignore symbolic links
       FTW_DEPTH -> make nftw() traverse the file tree from back to front*/
-    chdir(arguments.getWalkRoot().c_str());
-
-    char pwd[4096];
-    getcwd(pwd, 4096);
-    arguments.setWalkRoot(pwd);
-    timeval start, stop, result;
-
     gettimeofday(&start, NULL);
     nftw(pwd, tagwalker_direntryhandle_wrapper, 20, FTW_DEPTH | FTW_PHYS);
     gettimeofday(&stop, NULL);
 
     timersub(&stop, &start, &result);
 
-    // handle testmode here
+    // handle testmode - if selected - here
     if (arguments.hasTestMode()) {
         queue<string> output = tw_ptr->getTestModeOutputQueue();
 
