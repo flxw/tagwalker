@@ -32,12 +32,16 @@ public:
                    struct FTW *ftwbuf);
 
 private:
-    void handleMusicFile(const TagLib::FileRef& fr, std::string path);
+    // functions for handling different opmodes
+    void handleReorderMode(const TagLib::FileRef &fr, std::string path);
+    void handleRenameMode(const TagLib::FileRef &fr, std::string path);
+
+    // returns true if pattern expansion was successful
     bool expandPattern(const TagLib::Tag *tr, std::string &expansion_str);
 
     // functions for handling files
-    void RecursivelyMkdir(const std::string& path);
-    void forkAndMove(const std::string& from, const std::string& to);
+    void RecursivelyMkdir(const std::string &path);
+    void forkAndMove(const std::string &from, const std::string& to);
 
     // functions for handling folders
     bool isDirectoryEmpty(const char* path);

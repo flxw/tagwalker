@@ -158,9 +158,9 @@ int main(int argc, char** argv)
     use the following flags:
       FTW_PHYS  -> makes nftw() ignore symbolic links
       FTW_DEPTH -> make nftw() traverse the file tree from back to front*/
-    gettimeofday(&start, NULL);
+    gettimeofday(&start, NULL); // start epoch time
     nftw(pwd, tagwalker_direntryhandle_wrapper, 20, FTW_DEPTH | FTW_PHYS);
-    gettimeofday(&stop, NULL);
+    gettimeofday(&stop, NULL); // stop epoch time
 
     timersub(&stop, &start, &result);
 
@@ -183,7 +183,7 @@ int main(int argc, char** argv)
             cout << "Deleted " << tw_ptr->getDelDirCount() << " directories" << endl;
         }
 
-        cout << "Left    " << tw_ptr->getNoHandleCount() << " files unhandled" << endl;
+        cout << "Left    " << tw_ptr->getNoHandleCount() << " files unhandled due to insufficient tags" << endl;
         cout << "Took    " << result.tv_sec + result.tv_usec/1000000.0 << "s" << endl;
     }
 

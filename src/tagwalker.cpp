@@ -12,9 +12,20 @@ int TagWalker::handleDirEntry(const char *fpath, const struct stat *sb, int tfla
     // identify what fpath points to
     if (tflag == FTW_F) {
         TagLib::FileRef file(fpath, false);
+
         // see wether the file is good for working with
         if (!file.isNull() && !file.tag()->isEmpty()) {
-            this->handleMusicFile(file, std::string(fpath));
+            // TODO: check tag sufficiency
+            // we have *some* tags - so let's get crackin'
+            switch (this->config.getOpMode()) {
+                case Configuration::M_REORDER:
+                    this->handleReorderMode(file, std::string(fpath));
+                    break;
+                case Configuration::M_RENAME:
+                    this->handleRenameMode(file, std::string(fpath));
+                    break;
+            default: break;
+            }
         }
     } else if (tflag == FTW_DP) {
         if (this->config.shouldCleanup() && this->isDirectoryEmpty(fpath)) {
@@ -29,7 +40,7 @@ int TagWalker::handleDirEntry(const char *fpath, const struct stat *sb, int tfla
     return 0;
 }
 
-void TagWalker::handleMusicFile(const TagLib::FileRef &fr, std::string path) {
+void TagWalker::handleReorderMode(const TagLib::FileRef &fr, std::string path) {
     // check whether the file is already in the right place
     // to do that, expand the pattern first and make it a complete filename
     std::string expandedPattern;
@@ -37,34 +48,32 @@ void TagWalker::handleMusicFile(const TagLib::FileRef &fr, std::string path) {
     if (this->expandPattern(fr.tag(), expandedPattern)) {
 
         // put the pieces together - depending what opmode we have
-        switch (this->config.getOpMode()) {
-            case Configuration::M_REORDER:
-                expandedPattern = this->config.getWalkRoot() + expandedPattern;
-                expandedPattern.append(this->getBasename(path));
-                break;
-
-            case Configuration::M_RENAME:
-                expandedPattern = this->getPathname(path) + std::string("/") + expandedPattern;
-                expandedPattern.append(this->getSuffix(path));
-                break;
-        }
+        expandedPattern = this->config.getWalkRoot() + expandedPattern;
+        expandedPattern.append(this->getBasename(path));
 
         // only act if the two directories differ
         if ( path != expandedPattern ) {
+            this->RecursivelyMkdir(expandedPattern);
+            this->forkAndMove(path, expandedPattern);
+        }
+    } else {
+        ++this->unableToHandleCount;
+    }
+}
 
-            // now decide which opmode we have and what we should do
-            // in rename mode only the file itself is altered,
-            // so creating a directory is unnecessary
-            switch (this->config.getOpMode()) {
-            case Configuration::M_REORDER:
-                this->RecursivelyMkdir(expandedPattern);
-                this->forkAndMove(path, expandedPattern);
-                break;
+void TagWalker::handleRenameMode(const TagLib::FileRef &fr, std::string path) {
+    // check whether the file is already in the right place
+    // to do that, expand the pattern first and make it a complete filename
+    std::string expandedPattern;
 
-            case Configuration::M_RENAME:
-                this->forkAndMove(path, expandedPattern);
-                break;
-            }
+    if (this->expandPattern(fr.tag(), expandedPattern)) {
+
+        expandedPattern = this->getPathname(path) + std::string("/") + expandedPattern;
+        expandedPattern.append(this->getSuffix(path));
+
+        // only act if the two directories differ
+        if ( path != expandedPattern ) {
+            this->forkAndMove(path, expandedPattern);
         }
     } else {
         ++this->unableToHandleCount;
