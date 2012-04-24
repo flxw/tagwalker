@@ -12,7 +12,6 @@ int TagWalker::handleDirEntry(const char *fpath, const struct stat *sb, int tfla
     // identify what fpath points to
     if (tflag == FTW_F) {
         TagLib::FileRef file(fpath, false);
-
         // see wether the file is good for working with
         if (!file.isNull() && !file.tag()->isEmpty()) {
             this->handleMusicFile(file, std::string(fpath));
@@ -36,13 +35,18 @@ void TagWalker::handleMusicFile(const TagLib::FileRef &fr, std::string path) {
     std::string expandedPattern;
 
     if (this->expandPattern(fr.tag(), expandedPattern)) {
-        // put the pieces together
-        if (this->config.getOpMode() == Configuration::M_REORDER) {
-            expandedPattern = this->config.getWalkRoot() + expandedPattern;
-            expandedPattern.append(this->getBasename(path));
-        } else if (this->config.getOpMode() == Configuration::M_RENAME) {
-            expandedPattern = this->getPathname(path) + std::string("/") + expandedPattern;
-            expandedPattern.append(this->getSuffix(path));
+
+        // put the pieces together - depending what opmode we have
+        switch (this->config.getOpMode()) {
+            case Configuration::M_REORDER:
+                expandedPattern = this->config.getWalkRoot() + expandedPattern;
+                expandedPattern.append(this->getBasename(path));
+                break;
+
+            case Configuration::M_RENAME:
+                expandedPattern = this->getPathname(path) + std::string("/") + expandedPattern;
+                expandedPattern.append(this->getSuffix(path));
+                break;
         }
 
         // only act if the two directories differ
@@ -202,7 +206,8 @@ bool TagWalker::isDirectoryEmpty(const char *dirname) {
     struct dirent *d;
     DIR *dir = opendir(dirname);
 
-    if (dir == NULL) {//Not a directory or doesn't exist
+    if (dir == NULL) {
+        //Not a directory or doesn't exist
         return 1;
     }
 
@@ -214,7 +219,8 @@ bool TagWalker::isDirectoryEmpty(const char *dirname) {
     }
     closedir(dir);
 
-    if (n <= 2) {//Directory Empty
+    if (n <= 2) {
+        //Directory Empty
         return true;
     } else {
         return false;
@@ -245,19 +251,19 @@ std::string TagWalker::getSuffix(const std::string &path) {
     return path.substr(pos, std::string::npos);
 }
 
-int TagWalker::getMovedFileCount() const {
+unsigned int TagWalker::getMovedFileCount() const {
     return this->movedFileCount;
 }
 
-int TagWalker::getNewDirCount() const {
+unsigned int TagWalker::getNewDirCount() const {
     return this->newDirCount;
 }
 
-int TagWalker::getDelDirCount() const {
+unsigned int TagWalker::getDelDirCount() const {
     return this->removedDirCount;
 }
 
-int TagWalker::getNoHandleCount() const {
+unsigned int TagWalker::getNoHandleCount() const {
     return this->unableToHandleCount;
 }
 

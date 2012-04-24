@@ -49,10 +49,10 @@ private:
 
 public:
     // getters for summary
-    int getMovedFileCount() const;
-    int getNewDirCount() const;
-    int getNoHandleCount() const;
-    int getDelDirCount() const;
+    unsigned int getMovedFileCount() const;
+    unsigned int getNewDirCount() const;
+    unsigned int getNoHandleCount() const;
+    unsigned int getDelDirCount() const;
 
     // getters for testmode output
     std::queue<std::string> getTestModeOutputQueue();
