@@ -15,6 +15,7 @@ debug: LFLAGS += -DDEBUG -g
 debug: all
 
 release: CFLAGS += -O
+release: CFLAGS += -O
 release: all
 
 clean:
@@ -22,3 +23,9 @@ clean:
 
 install:
 	cp $(EXE) "$(DESTDIR)/usr/bin"
+
+install-man:
+	cp ../man/$(EXE).1 "$(DESTDIR)/usr/share/man/man1"
+
+install-man-gz:
+	cp ../man/$(EXE).1.gz "$(DESTDIR)/usr/share/man/man1"
