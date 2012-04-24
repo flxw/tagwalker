@@ -15,7 +15,7 @@ debug: LFLAGS += -DDEBUG -g
 debug: all
 
 release: CFLAGS += -O
-release: CFLAGS += -O
+release: LFLAGS += -O
 release: all
 
 clean:
