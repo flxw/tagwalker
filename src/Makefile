@@ -1,23 +1,23 @@
 CC         = g++
-EXE	   = tagwalker
-OBJ	   = main.o configuration.o tagwalker.o
-LFLAGS 	   = -Wall -ltag
-CFLAGS     = -Wall -c
+EXE	   	   = tagwalker
+OBJ		   = main.o configuration.o tagwalker.o
+LFLAGS 	   = `pkg-config --libs taglib`
+CFLAGS     = -c `pkg-config --cflags taglib`
 
-all: $(OBJ)
+$(EXE): CFLAGS += -O
+$(EXE): LFLAGS += -O
+$(EXE): $(OBJ)
+	$(CC) $(LFLAGS) $(OBJ) -o $(EXE)
+
+debug: CFLAGS += -Wall -DDEBUG -g
+debug: LFLAGS += -Wall -DDEBUG -g
+debug: $(OBJ)
 	$(CC) $(LFLAGS) $(OBJ) -o $(EXE)
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) $(DEBUG) $<
 
-debug: CFLAGS += -DDEBUG -g
-debug: LFLAGS += -DDEBUG -g
-debug: all
-
-release: CFLAGS += -O
-release: LFLAGS += -O
-release: all
-
+.PHONY: clean
 clean:
 	rm *.o $(EXE)
 
