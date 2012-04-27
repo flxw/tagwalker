@@ -1,50 +1,26 @@
-#include "tagwalker.h"
+#include "direntryhandle.h"
 
-TagWalker::TagWalker(const Configuration &conf) : config(conf)
+DirEntryHandle::DirEntryHandle(const Configuration &conf) : config(conf)
 {
     this->movedFileCount      = 0;
     this->newDirCount         = 0;
-    this->unableToHandleCount = 0;
     this->removedDirCount     = 0;
+    this->forkFailCount       = 0;
 }
 
-int TagWalker::handleDirEntry(const char *fpath, const struct stat *sb, int tflag, FTW *ftwbuf) {
-    // identify what fpath points to
-    if (tflag == FTW_F) {
-        TagLib::FileRef fileref(fpath, false);
-        std::string exPattern;
+void DirEntryHandle::handleDirectory(const char *fpath) {
 
-        // see wether the file is good for working with
-        if (!fileref.isNull() && fileref.tag() != NULL) {
-            if (this->expandPattern(fileref.tag(), exPattern)) {
-                // we have enough tag info - so let's get crackin'
-                switch (this->config.getOpMode()) {
-                case Configuration::M_REORDER:
-                    this->handleReorderMode(exPattern, std::string(fpath));
-                    break;
-
-                case Configuration::M_RENAME:
-                    this->handleRenameMode(exPattern, std::string(fpath));
-                    break;
-                }
-            } else {
-                ++this->unableToHandleCount;
-            }
+    if (this->config.shouldCleanup() && this->isDirectoryEmpty(fpath)) {
+        if (this->config.hasTestMode()) {
+            this->testModeOutputQueue.push(std::string("Delete `") + std::string(fpath) + std::string("'"));
+        } else {
+            rmdir(fpath);
         }
-    } else if (tflag == FTW_DP) {
-        if (this->config.shouldCleanup() && this->isDirectoryEmpty(fpath)) {
-            if (this->config.hasTestMode()) {
-                this->testModeOutputQueue.push(std::string("Delete `") + std::string(fpath) + std::string("'"));
-            } else {
-                rmdir(fpath);
-            }
-            ++this->removedDirCount;
-        }
+        ++this->removedDirCount;
     }
-    return 0;
 }
 
-void TagWalker::handleReorderMode(std::string &expandedPattern, const std::string path) {
+void DirEntryHandle::handleReorderMode(std::string &expandedPattern, const std::string path) {
     expandedPattern = this->config.getWalkRoot() + expandedPattern;
     expandedPattern.append(this->getBasename(path));
 
@@ -55,7 +31,7 @@ void TagWalker::handleReorderMode(std::string &expandedPattern, const std::strin
     }
 }
 
-void TagWalker::handleRenameMode(std::string &expandedPattern, const std::string path) {
+void DirEntryHandle::handleRenameMode(std::string &expandedPattern, const std::string path) {
     expandedPattern = this->getPathname(path) + std::string("/") + expandedPattern;
     expandedPattern.append(this->getSuffix(path));
 
@@ -65,50 +41,7 @@ void TagWalker::handleRenameMode(std::string &expandedPattern, const std::string
     }
 }
 
-bool TagWalker::expandPattern(const TagLib::Tag *tr, std::string &expansion_str) {
-    expansion_str = this->config.getPattern();
-
-    // Expand the pattern with the information contained in tr
-    for (unsigned int i=0; i<expansion_str.size(); ++i) {
-        // seek for a pattern initializer
-        if (expansion_str.at(i) == '%') {
-            // %a - artist
-            if (expansion_str.at(i+1) == 'a' && !tr->artist().isEmpty()) {
-                expansion_str.replace(i, 2, tr->artist().to8Bit(true));
-                i += tr->artist().length()-1; //update the index
-            }
-            // %r - release/album
-            else if (expansion_str.at(i+1) == 'r' && !tr->album().isEmpty()) {
-                expansion_str.replace(i, 2, tr->album().to8Bit(true));
-                i += tr->artist().length()-1; //update the index
-            }
-            // %t - track
-            else if (expansion_str.at(i+1) == 't' && !tr->title().isEmpty()) {
-                expansion_str.replace(i, 2, tr->title().to8Bit(true));
-                i += tr->title().length()-1;
-            }
-        }
-    }
-
-
-    if (this->config.getOpMode() == Configuration::M_REORDER) {
-        // check for preceding and following slashes
-        if (*(expansion_str.begin()) != '/') {
-            expansion_str = "/" + expansion_str;
-        }
-
-        if (*(expansion_str.end()-1) != '/') {
-            expansion_str.append("/");
-        }
-    }
-
-    // finally return a boolean indicating wether expansion was successful
-    // normally artists don't use percentage signs in their names...YET
-    // TODO: find a better pattern initiator
-    return (expansion_str.find('%') == std::string::npos);
-}
-
-void TagWalker::RecursivelyMkdir(const std::string &path) {
+void DirEntryHandle::RecursivelyMkdir(const std::string &path) {
     std::string p = this->getPathname(path);
     unsigned int i = p.find('/', this->config.getWalkRoot().length()+1);
 
@@ -147,7 +80,7 @@ void TagWalker::RecursivelyMkdir(const std::string &path) {
     }
 }
 
-void TagWalker::forkAndMove(const std::string &from, const std::string &to) {
+void DirEntryHandle::forkAndMove(const std::string &from, const std::string &to) {
     if (this->config.hasTestMode()) {
         this->testModeOutputQueue.push(from + std::string(" -> ") + to);
         ++this->movedFileCount;
@@ -163,7 +96,7 @@ void TagWalker::forkAndMove(const std::string &from, const std::string &to) {
         execl("/bin/mv", "/bin/mv", from.c_str(), to.c_str(), (char *)NULL);
     } else if (pid < 0) {
         /* error - couldn't start process - you decide how to handle */
-        ++this->unableToHandleCount;
+        ++this->forkFailCount;
     } else {
         /* parent - wait for child - this has all error handling, you
              * could just call wait() as long as you are only expecting to
@@ -173,7 +106,7 @@ void TagWalker::forkAndMove(const std::string &from, const std::string &to) {
         pid_t ws = wait(&childExitStatus);
 
         if (ws == -1) {
-            ++this->unableToHandleCount;
+            ++this->forkFailCount;
         }
 
         if (WIFEXITED(childExitStatus))
@@ -182,13 +115,13 @@ void TagWalker::forkAndMove(const std::string &from, const std::string &to) {
                 /* zero is normal exit */
                 ++this->movedFileCount;
             } else {
-                ++this->unableToHandleCount;
+                ++this->forkFailCount;
             }
         }
     }
 }
 
-bool TagWalker::isDirectoryEmpty(const char *dirname) {
+bool DirEntryHandle::isDirectoryEmpty(const char *dirname) {
     // sometimes the program is too fast for IO to keep up.
     // To avoid seeing a directory that should be empty as nonempty,
     // we sync the buffers before checking for emptiness
@@ -222,7 +155,7 @@ bool TagWalker::isDirectoryEmpty(const char *dirname) {
     }
 }
 
-std::string TagWalker::getPathname(const std::string &path) {
+std::string DirEntryHandle::getPathname(const std::string &path) {
     int pos = path.find_last_of('/');
     // what this function returns
     // /tmp/filename.mp3
@@ -230,7 +163,7 @@ std::string TagWalker::getPathname(const std::string &path) {
     return path.substr(0, pos);
 }
 
-std::string TagWalker::getBasename(const std::string &path) {
+std::string DirEntryHandle::getBasename(const std::string &path) {
     // what this function returns
     // /tmp/filename.mp3
     //      ^^^^^^^^
@@ -238,7 +171,7 @@ std::string TagWalker::getBasename(const std::string &path) {
     return path.substr(pos+1, std::string::npos);
 }
 
-std::string TagWalker::getSuffix(const std::string &path) {
+std::string DirEntryHandle::getSuffix(const std::string &path) {
     // what this function returns
     // /tmp/filename.mp3
     //              ^^^^
@@ -246,22 +179,18 @@ std::string TagWalker::getSuffix(const std::string &path) {
     return path.substr(pos, std::string::npos);
 }
 
-unsigned int TagWalker::getMovedFileCount() const {
+unsigned int DirEntryHandle::getMovedFileCount() const {
     return this->movedFileCount;
 }
 
-unsigned int TagWalker::getNewDirCount() const {
+unsigned int DirEntryHandle::getNewDirCount() const {
     return this->newDirCount;
 }
 
-unsigned int TagWalker::getDelDirCount() const {
+unsigned int DirEntryHandle::getDelDirCount() const {
     return this->removedDirCount;
 }
 
-unsigned int TagWalker::getNoHandleCount() const {
-    return this->unableToHandleCount;
-}
-
-std::queue<std::string> TagWalker::getTestModeOutputQueue() {
+std::queue<std::string> DirEntryHandle::getTestModeOutputQueue() {
     return this->testModeOutputQueue;
 }

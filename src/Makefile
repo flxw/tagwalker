@@ -1,6 +1,6 @@
 CC         = g++
 EXE	   	   = tagwalker
-OBJ		   = main.o configuration.o tagwalker.o
+OBJ		   = main.o configuration.o direntryhandle.o userinterface.o walker.o
 LFLAGS 	   = `pkg-config --libs taglib`
 CFLAGS     = -c `pkg-config --cflags taglib`
 
