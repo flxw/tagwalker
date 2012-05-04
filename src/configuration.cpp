@@ -1,4 +1,5 @@
 #include "configuration.h"
+#include <iostream>
 
 Configuration::Configuration()
 {
@@ -39,10 +40,9 @@ bool Configuration::isWalkRootValid() {
 }
 
 bool Configuration::isPatternValid() {
-    bool blnRet = true;
+    bool blnRet = !this->pattern.empty();
 
     if (this->mode == M_CHECK) {
-        // CONTINUE HERE
         // something like this
         // -p "TYPE:REGEXP_MODS:'PATTERN' "
         // ex:
@@ -51,18 +51,30 @@ bool Configuration::isPatternValid() {
         regex_t pattern_buffer;
         size_t max_matches = 4;
         regmatch_t matches[max_matches];
-        char pattern[] = "^([art]:[ie]{0,2}:.*){0,2}";
+        const char* pattern;
+
+        switch (this->countPatternSections()) {
+        case 1: pattern = "^([art]:[ie]{0,2}:.*)"; break;
+        case 2: pattern = "^([art]:[ie]{0,2}:.*) ([art]:[ie]{0,2}:.*)"; break;
+        case 3: pattern = "^([art]:[ie]{0,2}:.*) ([art]:[ie]{0,2}:.*) ([art]:[ie]{0,2}:.*)"; break;
+        default: blnRet = false; break;
+        }
 
         // compile the pattern first
-        if (regcomp(&pattern_buffer, pattern, REG_EXTENDED) == 0) {
+        if (blnRet && regcomp(&pattern_buffer, pattern, REG_EXTENDED) == 0) {
             // and then use it on the pattern
             if (regexec(&pattern_buffer, this->pattern.c_str(), max_matches, matches, REG_NOTEOL) == 0 ) {
                 // Index 0 of the match-array contains the whole match
                 // so we'll only use indices 1 through 3
+                if (matches[1].rm_so == -1) {
+                    blnRet = false;
+                }
+
                 for (unsigned int i = 1; i < max_matches && matches[i].rm_so != -1; ++i) {
                     blnRet = blnRet &&
                             this->handlePatternSection(this->pattern.substr(matches[i].rm_so,
                                                                             matches[i].rm_eo - matches[i].rm_so));
+//                    std::cout << this->pattern.substr(matches[i].rm_so, matches[i].rm_eo - matches[i].rm_so) << std::endl;
                 }
             } else {
                 // if regexec failed
@@ -74,8 +86,6 @@ bool Configuration::isPatternValid() {
             blnRet = false;
         }
     } else {
-        blnRet = !this->pattern.empty();
-
         for (int i=0; blnRet && i<this->pattern.length(); ++i) {
             // check for the pattern initiator
             if (this->pattern.at(i) == '%') {
@@ -103,9 +113,29 @@ bool Configuration::isPatternValid() {
     return blnRet;
 }
 
+int Configuration::countPatternSections() {
+    int colonCount = 0 ;
+
+    for (unsigned int i=0; i < this->pattern.length(); ++i) {
+        // check for first colon
+        if (this->pattern.at(i) == ':') {
+            ++colonCount;
+        }
+    }
+
+    // colonCount MUST be a multiple of 2
+    switch (colonCount) {
+    case 2: return 1;
+    case 4: return 2;
+    case 6: return 3;
+    default: return 0;
+    }
+}
+
 bool Configuration::handlePatternSection(const std::string &part) {
     regex_t *buffer_ptr;
     int     flags = REG_NOSUB;
+    bool    good = true;
 
     // find out the type of tag the regex is for
     switch (part.at(0)) {
@@ -123,6 +153,10 @@ bool Configuration::handlePatternSection(const std::string &part) {
         buffer_ptr = &this->title_regex_buffer;
         this->title_regex_set = true;
         break;
+
+    default:
+        good = false;
+        break;
     }
 
     // now find out what modifiers were set
@@ -131,6 +165,7 @@ bool Configuration::handlePatternSection(const std::string &part) {
         switch (part.at(i)) {
         case 'e': flags |= REG_EXTENDED; break;
         case 'i': flags |= REG_ICASE;    break;
+        default: good = false; break;
         }
     }
 
@@ -138,7 +173,7 @@ bool Configuration::handlePatternSection(const std::string &part) {
     // after that is the regex the user has set
     i++; //increment i so we can have the rest;
 
-    return regcomp(buffer_ptr, part.substr(i).c_str(), flags) == 0;
+    return (regcomp(buffer_ptr, part.substr(i).c_str(), flags) == 0) && good;
 }
 
 void Configuration::setWalkRoot(const char *path) {
@@ -187,6 +222,18 @@ void Configuration::setCleanup(bool on) {
 
 bool Configuration::shouldCleanup() const {
     return this->shouldClean;
+}
+
+bool Configuration::hasArtistRegexBuffer() const {
+    return this->artist_regex_set;
+}
+
+bool Configuration::hasReleaseRegexBuffer() const {
+    return this->release_regex_set;
+}
+
+bool Configuration::hasTitleRegexBuffer() const {
+    return this->title_regex_set;
 }
 
 const regex_t* Configuration::getArtistRegexBufferPtr() const {

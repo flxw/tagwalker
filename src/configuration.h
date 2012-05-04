@@ -30,6 +30,7 @@ public:
     // and checks their validity
     bool isPatternValid();
 
+
     /* GETTERS AND SETTERS FROM HERE ON */
     // walkRoot get and set methods
     void setWalkRoot(const char* path);
@@ -55,12 +56,19 @@ public:
     void setCleanup(bool on);
     bool shouldCleanup() const;
 
-    // return pointers to the regex buffers
+    // buffer boolean and pointer getters
+    bool hasArtistRegexBuffer() const;
+    bool hasReleaseRegexBuffer() const;
+    bool hasTitleRegexBuffer() const;
+
     const regex_t* getArtistRegexBufferPtr() const;
     const regex_t* getReleaseRegexBufferPtr() const;
     const regex_t* getTitleRegexBufferPtr() const;
 
 private:
+    // only for checkmode!
+    int countPatternSections();
+
     bool handlePatternSection(const std::string &part);
 
 private:
