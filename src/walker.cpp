@@ -1,4 +1,5 @@
 #include "walker.h"
+#include <iostream>
 
 Walker::Walker(const Configuration &cfg) : config(cfg), deHandle(cfg) {
     this->unableToHandleCount = 0;
@@ -11,11 +12,20 @@ int Walker::handleDirEntry(const char *fpath, const struct stat *sb, int tflag, 
 
         // see whether the file is good for working with
         if (!fileref.isNull() && fileref.tag() != NULL) {
+
             if (this->config.getOpMode() == Configuration::M_CHECK) {
+
+                int checkRes = this->deHandle.handleCheckMode(
+                            fileref.tag()->artist().toCString(true),
+                            fileref.tag()->album().toCString(true),
+                            fileref.tag()->title().toCString(true));
+
+                if (this->actOnCheckResult(checkRes, fileref)) {
+                    fileref.save();
+                }
+
             } else if (this->expandPattern(fileref.tag(), exPattern)) {
-
                 // we have enough tag info - so let's begin
-
                 switch (this->config.getOpMode()) {
                 case Configuration::M_REORDER:
                     this->deHandle.handleReorderMode(exPattern, fpath);
@@ -29,12 +39,53 @@ int Walker::handleDirEntry(const char *fpath, const struct stat *sb, int tflag, 
                 // expansion failed, put that into the statistics
                 ++this->unableToHandleCount;
             }
-        } else if (tflag == FTW_D) {
-            this->deHandle.handleDirectory(fpath);
         }
+    } else if (tflag == FTW_D) {
+        this->deHandle.handleDirectory(fpath);
     }
 
     return 0;
+}
+
+bool Walker::actOnCheckResult(int cr, const TagLib::FileRef &fr) {
+    bool modified = false;
+
+    if (cr != DirEntryHandle::CR_OKAY) {
+        if ((cr & DirEntryHandle::CR_ARTIST) == DirEntryHandle::CR_ARTIST) {
+            // the album regex matched, so act accordingly
+            std::string originalTag = fr.tag()->artist().to8Bit(true);
+            std::string artistEdit  = UserInterface::editArtistTagOnPrompt(originalTag.c_str());
+
+            if (originalTag != artistEdit) {
+                fr.tag()->setArtist(artistEdit);
+                modified = true;
+            }
+        }
+
+        if ((cr & DirEntryHandle::CR_RELEASE) == DirEntryHandle::CR_RELEASE) {
+            // the album regex matched, so act accordingly
+            std::string originalTag = fr.tag()->album().to8Bit(true);
+            std::string releaseEdit = UserInterface::editArtistTagOnPrompt(originalTag.c_str());
+
+            if (originalTag != releaseEdit) {
+                fr.tag()->setAlbum(releaseEdit);
+                modified = true;
+            }
+        }
+
+        if ((cr & DirEntryHandle::CR_TITLE) == DirEntryHandle::CR_TITLE) {
+            // the album regex matched, so act accordingly
+            std::string originalTag = fr.tag()->title().to8Bit(true);
+            std::string titleEdit = UserInterface::editArtistTagOnPrompt(originalTag.c_str());
+
+            if (originalTag != titleEdit) {
+                fr.tag()->setTitle(titleEdit);
+                modified = true;
+            }
+        }
+    }
+
+    return modified;
 }
 
 bool Walker::expandPattern(const TagLib::Tag *tr, std::string &expansion_str) {

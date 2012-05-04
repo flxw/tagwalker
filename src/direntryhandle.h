@@ -1,8 +1,6 @@
 #ifndef DirEntryHandle_H
 #define DirEntryHandle_H
 
-
-
 #include <dirent.h>
 #include <sys/wait.h>
 #include <sys/types.h>
@@ -13,16 +11,16 @@
 
 #include "configuration.h"
 
-/* This class incorporates functions for walking the file tree
- * According to the information contained in a Configuration instance
- * patterns are expanded and files are renamed */
+/* This class handles moving and renaming files
+ * according to the information contained in a Configuration instance */
 
 class DirEntryHandle
 {
 public:
     DirEntryHandle(const Configuration &conf);
 
-    void handleDirectory(const char *fpath);
+    // Enums
+    enum CheckResult {CR_OKAY, CR_ARTIST, CR_RELEASE, CR_TITLE};
 
     // getters for summary
     unsigned int getMovedFileCount() const;
@@ -33,11 +31,12 @@ public:
     std::queue<std::string> getTestModeOutputQueue();
 
     // functions for handling different opmodes
+    void handleDirectory(const char *fpath);
     void handleReorderMode(std::string &expandedPattern, const std::string path);
     void handleRenameMode(std::string &expandedPattern, const std::string path);
-
-    // Enums
-    enum CheckResult {CR_OKAY, CR_ARTIST, CR_RELEASE, CR_TITLE};
+    int handleCheckMode(const char *artist,
+                        const char *release,
+                        const char *title);
 
 private:
     // functions for handling files
@@ -48,9 +47,9 @@ private:
     bool isDirectoryEmpty(const char* path);
 
     // functions for handling pathnames
-    std::string getPathname(const std::string &path);
-    std::string getBasename(const std::string &path);
-    std::string getSuffix(const std::string &path);
+    static std::string getPathname(const std::string &path);
+    static std::string getBasename(const std::string &path);
+    static std::string getSuffix(const std::string &path);
 
 
 private:

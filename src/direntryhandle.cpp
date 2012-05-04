@@ -41,6 +41,35 @@ void DirEntryHandle::handleRenameMode(std::string &expandedPattern, const std::s
     }
 }
 
+int DirEntryHandle::handleCheckMode(const char* artist,
+                                                            const char* release,
+                                                            const char* title) {
+    int checkResult = 0;
+
+    /// handle artist regex here
+    if (this->config.hasArtistRegexBuffer()) {
+        if (regexec(this->config.getArtistRegexBufferPtr(), artist, 0, 0, 0) == 0) {
+            checkResult |= DirEntryHandle::CR_ARTIST;
+        }
+    }
+
+    /// handle release regex here
+    if (this->config.hasReleaseRegexBuffer()) {
+        if (regexec(this->config.getReleaseRegexBufferPtr(), release, 0, 0, 0) == 0) {
+            checkResult |= DirEntryHandle::CR_RELEASE;
+        }
+    }
+
+    /// handle title regex here
+    if (this->config.hasArtistRegexBuffer()) {
+        if (regexec(this->config.getArtistRegexBufferPtr(), title, 0, 0, 0) == 0) {
+            checkResult |= DirEntryHandle::CR_TITLE;
+        }
+    }
+
+    return (checkResult == 0) ? CR_OKAY : checkResult;
+}
+
 void DirEntryHandle::RecursivelyMkdir(const std::string &path) {
     std::string p = this->getPathname(path);
     unsigned int i = p.find('/', this->config.getWalkRoot().length()+1);

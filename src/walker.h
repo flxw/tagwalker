@@ -13,6 +13,7 @@
 
 #include "configuration.h"
 #include "direntryhandle.h"
+#include "userinterface.h"
 
 class Walker
 {
@@ -32,6 +33,7 @@ public:
     std::queue<std::string> getTestOutputQueue();
 
 private:
+    bool actOnCheckResult(int cr, const TagLib::FileRef &fr);
     bool expandPattern(const TagLib::Tag *tr, std::string &expansion_str);
 
 private:
